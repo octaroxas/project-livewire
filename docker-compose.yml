@@ -1,0 +1,58 @@
+version: "3"
+
+services:
+  app:
+    build:
+      args:
+        user: ${USER}
+        uid: 1000
+      context: ./
+      dockerfile: docker-compose/app/Dockerfile
+    image: finance-app
+    container_name: finance-app
+    restart: unless-stopped
+    working_dir: /var/www/
+    volumes:
+      - ./:/var/www
+      - ./docker-compose/app/php/php.ini:/usr/local/etc/php/php.ini
+    environment:
+      - TZ=America/Santarem
+    networks:
+      protocolo:
+        ipv4_address: 172.16.15.2
+  db:
+    image: postgres:13
+    ports:
+      - "5432:5432"
+    container_name: finance-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_DATABASE}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - /home/data/finance:/var/lib/postgresql/data
+    networks:
+      protocolo:
+        ipv4_address: 172.16.15.3
+
+  nginx:
+    image: nginx:alpine
+    container_name: finance-nginx
+    restart: unless-stopped
+    ports:
+      - 8000:80
+    volumes:
+      - ./:/var/www
+      - ./docker-compose/nginx:/etc/nginx/conf.d/
+    environment:
+      - TZ=America/Santarem
+    networks:
+      protocolo:
+        ipv4_address: 172.16.15.4
+
+networks:
+  protocolo:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.16.15.0/28
